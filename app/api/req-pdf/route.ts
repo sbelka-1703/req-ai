@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fromBuffer } from 'pdf2pic'
-import axios from 'axios'
 import { Buffer } from 'buffer'
+import OpenAI from 'openai'
+
+const openAi = new OpenAI({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY // Ensure your API key is correctly set
+})
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,28 +40,40 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Function to send image to OpenAI Vision using Axios
+// Function to send image to OpenAI Vision API
 async function processWithOpenAIVision(image: Buffer) {
-  const apiKey = process.env.OPENAI_API_KEY
+  let retryCount = 0
+  const maxRetries = 5
 
-  try {
-    const response = await axios.post(
-      'https://api.openai.com/v1/images:analyze', // Replace with the correct OpenAI Vision endpoint
-      image,
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'image/jpeg' // Adjust based on image type
-        }
-      }
-    )
-
-    const text = response.data.text || '' // Extract the text from the response
-    return text
-  } catch (error) {
-    console.error('OpenAI Vision API error:', error)
-    throw error
+  while (retryCount < maxRetries) {
+    try {
+      const response = await openAi.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: '1.Given the tests, look up the tube and volume that is required 2.Given all the tubes (and volume) required, calculate how many tubes we need'
+              },
+              {
+                type: 'image_url',
+                image_url: { url: `data:image/jpeg;base64,${image.toString('base64')}` }
+              }
+            ]
+          }
+        ]
+      })
+      return response.choices[0].message.content
+    } catch (error) {
+      // if (error.status === 429) {
+      console.error('Error processing with OpenAI Vision:', error)
+      throw error
+    }
   }
+
+  throw new Error('Max retries reached')
 }
 
 // Function to convert PDF to images (using pdf2pic)
@@ -72,7 +88,7 @@ async function convertPdfToImages(pdfBuffer: Buffer) {
   const converter = fromBuffer(pdfBuffer, options)
 
   // Convert all pages to images as buffers
-  const images = await converter.bulk(-1, { responseType: 'buffer' }) // Use responseType: "buffer"
+  const images = await converter.bulk(-1, { responseType: 'buffer' })
 
   return images.map((image) => image.buffer) // Extract the buffer from each image response
 }
