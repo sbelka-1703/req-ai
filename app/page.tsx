@@ -5,6 +5,7 @@ import axios from 'axios'
 
 export default function FileUploadForm() {
   const [file, setFile] = useState<File | null>(null)
+  const [response, setResponse] = useState('')
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
@@ -32,15 +33,19 @@ export default function FileUploadForm() {
       })
 
       console.log('File uploaded successfully:', response.data)
+      setResponse(response.data.text)
     } catch (error) {
       console.error('Error uploading file:', error)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input type='file' onChange={handleFileChange} accept='application/pdf' />
-      <button type='submit'>Upload PDF</button>
-    </form>
+    <div>
+      <form onSubmit={handleSubmit}>
+        <input type='file' onChange={handleFileChange} accept='application/pdf' />
+        <button type='submit'>Upload PDF</button>
+      </form>
+      {response !== '' && <p>{response}</p>}
+    </div>
   )
 }
