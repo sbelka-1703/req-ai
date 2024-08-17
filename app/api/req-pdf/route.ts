@@ -16,94 +16,112 @@ const totalTubeVolume = [
 
 const testsReference = [
   {
-    cptCode: '86140',
+    orderCode: '006627',
     testName: 'C-Reactive Protein (CRP), Quantitative',
     tubeType: 'gel-barrier',
     volume: 1 // Volume in mL
   },
   {
-    cptCode: '81001',
+    orderCode: '377036',
     testName: 'Urinalysis, Complete',
     tubeType: 'Vacutainer® red/yellow urine transport tube',
     volume: 10 // Volume in mL (typical)
   },
   {
-    cptCode: '82550',
+    orderCode: '001362',
     testName: 'Creatine Kinase (CK), Total Serum',
     tubeType: 'gel-barrier',
     volume: 1 // Volume in mL
   },
   {
-    cptCode: '82306',
+    orderCode: '081950',
     testName: 'Vitamin D, 25-Hydroxy',
     tubeType: 'gel-barrier',
-    volume: 1 // Volume in mL
+    volume: 0.5 // Volume in mL
   },
   {
-    cptCode: '86038',
+    orderCode: '164947',
     testName: 'ANA by IFA, Reflex to Titer and Pattern',
     tubeType: 'gel-barrier',
-    volume: 2 // Volume in mL
+    volume: 1 // Volume in mL
   },
   {
-    cptCode: '86235',
-    testName: 'Antinuclear Antibodies (ANA)',
-    tubeType: 'gel-barrier',
-    volume: 2 // Volume in mL
-  },
-  {
-    cptCode: '81374',
-    testName: 'HLA B27 Disease Association',
-    tubeType: 'lavender-top',
-    volume: 3 // Volume in mL
-  },
-  {
-    cptCode: '86200',
-    testName: 'Anti-CCP (Cyclic Citrullinated Peptide) Antibodies',
+    orderCode: '164065',
+    testName: 'Sjögren Antibodies (Anti-SS-A/Anti-SS-B)',
     tubeType: 'gel-barrier',
     volume: 1 // Volume in mL
   },
   {
-    cptCode: '86635',
+    orderCode: '006924',
+    testName: 'HLA B27 Disease Association',
+    tubeType: 'lavender-top',
+    volume: 6 // Volume in mL
+  },
+  {
+    orderCode: '164798',
     testName: 'Coccidioides Abs, IgG/IgM',
     tubeType: 'gel-barrier',
     volume: 1 // Volume in mL
   },
   {
-    cptCode: '82164',
+    orderCode: '010116',
     testName: 'Angiotensin-Converting Enzyme',
     tubeType: 'gel-barrier',
-    volume: 1 // Volume in mL
+    volume: 0.5 // Volume in mL
   },
   {
-    cptCode: '86160',
+    orderCode: '001834',
     testName: 'Complement C4, Serum',
     tubeType: 'gel-barrier',
     volume: 1 // Volume in mL
   },
   {
-    cptCode: '84550',
+    orderCode: '001057',
     testName: 'Uric Acid, Serum',
     tubeType: 'gel-barrier',
     volume: 1 // Volume in mL
   },
   {
-    cptCode: '86037',
-    testName: 'ANCA Profile',
+    orderCode: '163061',
+    testName: 'Antineutrophil Cytoplasmic Antibody (ANCA) Profile',
     tubeType: 'gel-barrier',
+    volume: 3 // Volume in mL
+  },
+  {
+    orderCode: '005009',
+    testName: 'Complete Blood Count (CBC) With Differential',
+    tubeType: 'lavender-top',
+    volume: 3 // Volume in mL
+  },
+  {
+    orderCode: '322000',
+    testName: 'Comprehensive Metabolic Panel',
+    tubeType: 'gel-barrier',
+    volume: 3 // Volume in mL
+  },
+  {
+    orderCode: '005215',
+    testName: 'Sedimentation Rate-Westergren',
+    tubeType: 'lavender-top (EDTA)',
     volume: 2 // Volume in mL
   },
   {
-    cptCode: '85025',
-    testName: 'Complete Blood Count (CBC) With Differential',
-    tubeType: 'lavender-top',
-    volume: 1 // Volume in mL
+    orderCode: '002030',
+    testName: 'Aldolase',
+    tubeType: 'red-top or gel-barrier',
+    volume: 0.5 // Volume in mL
   },
   {
-    cptCode: '80053',
-    testName: 'Comprehensive Metabolic Panel',
+    orderCode: '144000',
+    testName: 'Acute Hepatitis Panel',
     tubeType: 'gel-barrier',
-    volume: 1 // Volume in mL
+    volume: 5 // Volume in mL
+  },
+  {
+    orderCode: '001487',
+    testName: 'Protein Electrophoresis, Serum',
+    tubeType: 'gel-barrier',
+    volume: 2 // Volume in mL
   }
 ]
 
@@ -375,6 +393,7 @@ async function textToTubeTypeAndVolume(extractedText: string) {
       "success": true,
       
       "detailedSteps": [
+        
         {
           "title": "Step 1: Identify all test names and order codes",
           "content": [
@@ -398,7 +417,15 @@ async function textToTubeTypeAndVolume(extractedText: string) {
           ]
         },
         {
-          "title": "Step 4: Determine the number of tubes required for each tube type",
+          "title": "Step 4: Give a detailed report of calculations performed with numbers and mention the total capacity of each tube ",
+          "content": [
+            Step 1: 
+            Step 2:
+            ...
+          ]
+        }
+        {
+          "title": "Step 5: Determine the number of tubes required for each tube type",
           "content": [
             "Tube Type: [tubeType], Number of Tubes: [number of tubes]",
             ...
