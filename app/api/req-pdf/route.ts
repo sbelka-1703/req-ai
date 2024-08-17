@@ -3,8 +3,6 @@ import { fromBuffer } from 'pdf2pic'
 import { Buffer } from 'buffer'
 
 import OpenAI from 'openai'
-import fs from 'fs'
-import path from 'path'
 const openAi = new OpenAI({
   apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY // Ensure your API key is correctly set
 })
@@ -89,7 +87,7 @@ const testsReference = [
   },
   {
     orderCode: '005009',
-    testName: 'Complete Blood Count (CBC) With Differential',
+    testName: 'CBC With Differential/Platelet',
     tubeType: 'lavender-top',
     volume: 3 // Volume in mL
   },
@@ -360,7 +358,10 @@ async function pdfToText(image: Buffer) {
         {
           role: 'user',
           content: [
-            { type: 'text', text: 'Extract all of the text' },
+            {
+              type: 'text',
+              text: 'Your job is to find Profiles / Tests in this document and only extract that information(Order code, status, Test Name and Transport Requirements), but double check if all the tests are extracted accurately,'
+            },
             {
               type: 'image_url',
               image_url: {
@@ -381,10 +382,13 @@ async function textToTubeTypeAndVolume(extractedText: string) {
   const prompt = `
     Given the following text that includes tests ordered and their corresponding order codes:
 
-    1. Identify all test names and order codes from the text.
+    1. Identify all test names and order codes from the text, make sure you get all of the tests, by checking the number of tests in the text.
     2. For each test, match it with its corresponding tube type and volume using the provided reference list.
     3. Calculate the total volume required for each tube type.
-    4. By looking at ${totalTubeVolume} to see the max volume for the tubes, determine the number of tubes required for each tube type by considering the total available volume of each tube from the provided totalTubeVolume list. If the total volume for a tube type exceeds its capacity, add another tube.
+    4. By looking at ${totalTubeVolume} determine amount of tubes needed. Think step by step. If the total volume for all the tests exceeds the capacity of a specific tube add another tube:
+        Example:
+        -If the total volume for a specific container is 5L, but the capacity of container is only 1L, you need 5 containers.
+        -If a total volume for a specific container is 7.5ml. but the capacity of container is 2ml -- you would need 4 containers. 7.5 / 2 = 3.75; You cannot have 3.75 containers so you round it to 4 containers.
     5. For tubeSummary always take information for number of tubes from detailedSteps Step 4 and total volume from step 3. 
 
     Output the result as a JSON object structured with the following keys, your only output should be a pure JavaScript json object and nothing else, it should start with { end with }, do not use delimeters json :
@@ -417,10 +421,11 @@ async function textToTubeTypeAndVolume(extractedText: string) {
           ]
         },
         {
-          "title": "Step 4: Give a detailed report of calculations performed with numbers and mention the total capacity of each tube ",
+          "title": "Step 4: Give a detailed report of calculations performed by showing the math that got you the results for a specific tube and mention the total capacity of each tube ",
           "content": [
             Step 1: 
             Step 2:
+            Step 3: 
             ...
           ]
         }
@@ -510,19 +515,6 @@ async function convertPdfToImages(pdfBuffer: Buffer) {
   // Convert all pages to images as buffers
   const images = await converter.bulk(-1, { responseType: 'buffer' })
 
-  // Create a directory to store the images if it doesn't exist
-  const outputDir = path.join(process.cwd(), 'output_images')
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir)
-  }
-
-  // Save each image to the directory and return the file paths
-  const imagePaths = images.map((image, index) => {
-    const imagePath = path.join(outputDir, `image_${index + 1}.jpeg`)
-    image.buffer && fs.writeFileSync(imagePath, image.buffer)
-    return imagePath
-  })
-
-  console.log('Images saved at:', imagePaths)
-  return images.map((image) => image.buffer) // Return the buffers as well
+  // Return the image buffers directly
+  return images.map((image) => image.buffer)
 }
