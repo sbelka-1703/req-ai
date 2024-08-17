@@ -532,18 +532,28 @@ async function totalTubesNeeded(extractedText: string | null) {
 }
 
 // Function to convert PDF to images (using pdf2pic)
+
 async function convertPdfToImages(pdfBuffer: Buffer) {
   const options = {
-    density: 300, // Increase density for higher image quality
+    density: 200, // Reduce density for lower processing overhead
     format: 'jpeg',
-    width: 1024,
-    height: 1024,
-    quality: 100
+    width: 800, // Reduce dimensions to reduce memory usage
+    height: 800,
+    quality: 80 // Lower quality to reduce memory usage
   }
 
   const converter = fromBuffer(pdfBuffer, options)
 
-  // Convert all pages to images as buffers and return them directly
-  const images = await converter.bulk(-1, { responseType: 'buffer' })
-  return images.map((image) => image.buffer)
+  // Convert pages one at a time to reduce memory usage
+  const pagesToConvert = -1 // Set to -1 to convert all pages, or specify a range like [1, 2, 3] for specific pages
+
+  try {
+    const images = await converter.bulk(pagesToConvert, { responseType: 'buffer' })
+    return images.map((image) => image.buffer)
+  } catch (error) {
+    console.error('Error converting PDF to images:', error)
+    throw new Error('PDF to image conversion failed.')
+  }
 }
+
+export default convertPdfToImages
