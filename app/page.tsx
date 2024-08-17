@@ -3,10 +3,27 @@
 import { useState } from 'react'
 import axios from 'axios'
 import { PhotoIcon, ArrowPathIcon } from '@heroicons/react/24/solid'
+import TestResults from '@/components/TestResults'
+
+interface TubeSummary {
+  tubeType: string
+  numTubes: number
+  totalVolume: string
+}
+
+interface DetailedStep {
+  title: string
+  content: string[]
+}
+
+interface CalculationResult {
+  tubeSummary: TubeSummary[]
+  detailedSteps: DetailedStep[]
+}
 
 export default function FileUploadForm() {
   const [file, setFile] = useState<File | null>(null)
-  const [calculation, setCalculation] = useState('')
+  const [calculation, setCalculation] = useState<CalculationResult | null>(null)
   const [response, setResponse] = useState('')
   const [processing, setProcessing] = useState(false)
 
@@ -39,15 +56,19 @@ export default function FileUploadForm() {
       console.log('File uploaded successfully:', response.data)
       setProcessing(false)
 
-      setResponse(response.data.text)
+      // Assuming the response.data is of the correct type
       setCalculation(response.data.calculation)
+      setResponse(response.data)
+      console.log('response', response)
+      console.log('data', response.data)
     } catch (error) {
       console.error('Error uploading file:', error)
+      setProcessing(false)
     }
   }
 
   return (
-    <div className='m-auto mt-64   '>
+    <div className='m-auto mt-64 px-2'>
       <form className='flex flex-col' onSubmit={handleSubmit}>
         <div className='col-span-full'>
           <label htmlFor='cover-photo' className='block text-sm font-medium leading-6 text-gray-900'>
@@ -78,16 +99,12 @@ export default function FileUploadForm() {
         </div>
         <button
           type='submit'
-          className=' flex space-x-2 justify-center items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'>
+          className='flex space-x-2 justify-center items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'>
           <span>{!processing ? 'Upload PDF requisition' : 'Processing'}</span>
           {processing && <ArrowPathIcon className='w-6 animate-spin' />}
         </button>
       </form>
-      {response && calculation !== '' && (
-        <div>
-          <p>{calculation}</p> <p className='text-red-300 text-lg'>{response}</p>{' '}
-        </div>
-      )}
+      {response && calculation && <TestResults data={calculation} />}
     </div>
   )
 }

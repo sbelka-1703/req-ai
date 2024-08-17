@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fromBuffer } from 'pdf2pic'
 import { Buffer } from 'buffer'
-import { PDFDocument } from 'pdf-lib' // Import pdf-lib for page count
 
 import OpenAI from 'openai'
 import fs from 'fs'
@@ -237,59 +236,60 @@ const testsReference = [
 // Here's the extracted text from the document:
 
 // ---
+const documentText = `
 
-// **LabCorp**
+**LabCorp**
 
-// Specimen/Provider Information
-// Collection Date: 08/13/2024 @ 12:45
-// Ordering Provider: Rizwan, Mian
+Specimen/Provider Information
+Collection Date: 08/13/2024 @ 12:45
+Ordering Provider: Rizwan, Mian
 
-// **Patient Information**
-// Patient Name:
-// Patient Id:
-// SSN:
-// DOB: 07/26/1953
-// Work Phone:
+**Patient Information**
+Patient Name:
+Patient Id:
+SSN:
+DOB: 07/26/1953
+Work Phone:
 
-// **Billing Information**
-// Primary Ins.: Humana
-// Primary Ins. Address: P.O. Box 14601
-// City St. Zip: Lexington, KY 40512-4601
-// Workers Comp:
-// Group: H68606778
+**Billing Information**
+Primary Ins.: Humana
+Primary Ins. Address: P.O. Box 14601
+City St. Zip: Lexington, KY 40512-4601
+Workers Comp:
+Group: H68606778
 
-// **Bill To: Third Party**
-// Secondary Ins.:
-// Secondary Ins. Address:
-// City St. Zip:
-// Workers Comp:
-// Policy:
-// Emp / Grp Name:
-// Insured:
-// Address:
-// City St. Zip:
-// Relationship:
+**Bill To: Third Party**
+Secondary Ins.:
+Secondary Ins. Address:
+City St. Zip:
+Workers Comp:
+Policy:
+Emp / Grp Name:
+Insured:
+Address:
+City St. Zip:
+Relationship:
 
-// **Guarantor Information**
-// Name:
-// Address:
-// Sample Comment:
+**Guarantor Information**
+Name:
+Address:
+Sample Comment:
 
-// **Profiles / Tests**
-// Order Code | CPT Code | Status | Test Name | Transport Requirements
-// ------------ | -------- | ------ | --------- | ----------------------
-// 005609 | 85325 | Routine | CBC with Differential/Platelet | Room Temperature
-// 006267 | 86140 | Routine | C-Reactive Protein, Quant | Room Temperature
-// 322000 | 80053 | Routine | Comp. Metabolic Panel (14) | Room Temperature
-// 164798 | 86635 | Routine | Coccidioides Abs, IgG/IgM, EIA | Room Temperature
-// 163061 | 86037 | Routine | ANCA Profile | Room Temperature
+**Profiles / Tests**
+Order Code | CPT Code | Status | Test Name | Transport Requirements
+------------ | -------- | ------ | --------- | ----------------------
+005609 | 85325 | Routine | CBC with Differential/Platelet | Room Temperature
+006267 | 86140 | Routine | C-Reactive Protein, Quant | Room Temperature
+322000 | 80053 | Routine | Comp. Metabolic Panel (14) | Room Temperature
+164798 | 86635 | Routine | Coccidioides Abs, IgG/IgM, EIA | Room Temperature
+163061 | 86037 | Routine | ANCA Profile | Room Temperature
 
-// Authorization - Please sign and date
-// I hereby authorize the release of medical information related to the services described herein and authorize payment directly to LabCorp. I agree to assume responsibility for payment of charges for laboratory services that are not covered by my health insurance.
+Authorization - Please sign and date
+I hereby authorize the release of medical information related to the services described herein and authorize payment directly to LabCorp. I agree to assume responsibility for payment of charges for laboratory services that are not covered by my health insurance.
 
-// Rizwan, Mian 08/13/2024
-// Ordering Provider Electronic Signature: [Signature]
-// Patient Signature: [Signature]
+Rizwan, Mian 08/13/2024
+Ordering Provider Electronic Signature: [Signature]
+Patient Signature: [Signature]
 
 // [LINK]
 
@@ -308,51 +308,17 @@ export async function POST(request: NextRequest) {
     // Convert the file into a Buffer for pdf2pic
     const pdfBuffer = Buffer.from(await file.arrayBuffer())
 
-    // Get the number of pages in the PDF (using pdf-lib)
-    const pdfDoc = await PDFDocument.load(pdfBuffer)
-    const numberOfPages = pdfDoc.getPageCount()
-
     // Convert the PDF to images using pdf2pic
     const images = await convertPdfToImages(pdfBuffer)
 
-    // Check if the number of images matches the number of pages
-    if (images.length !== numberOfPages) {
-      console.error('Mismatch in image count and number of pages in the PDF')
-      return NextResponse.json({ success: false, message: 'Mismatch in image count and number of pages in the PDF' })
-    }
-
     const results = []
-    const maxRetries = 3 // Set the maximum number of retries
-    const processedPages = []
 
     // Send each image to OpenAI Vision API with retry mechanism
-    for (const [index, image] of images.entries()) {
-      let success = false
-      let retries = 0
-
-      while (!success && retries < maxRetries) {
-        try {
-          if (image) {
-            const visionResult = await pdfToText(image)
-            results.push(visionResult)
-            processedPages.push(index)
-            success = true // Mark success if the processing is successful
-          }
-        } catch (error) {
-          console.error(`Error processing image for page ${index + 1} (attempt ${retries + 1}):`, error)
-          retries++
-        }
+    for (const image of images) {
+      if (image) {
+        const visionResult = await pdfToText(image)
+        results.push(visionResult)
       }
-
-      if (!success) {
-        console.error(`Failed to process page ${index + 1} after ${maxRetries} retries.`)
-      }
-    }
-
-    // Check if all pages were processed
-    if (processedPages.length < numberOfPages) {
-      console.error(`Processed ${processedPages.length} out of ${numberOfPages} pages.`)
-      return NextResponse.json({ success: false, message: 'Some pages were not processed successfully.' })
     }
 
     const joinedResults = results.join('\n')
@@ -361,9 +327,7 @@ export async function POST(request: NextRequest) {
     const tubesAndVolumeNeeded = await textToTubeTypeAndVolume(joinedResults)
     console.log('tubesAndVolumeNeeded', tubesAndVolumeNeeded)
 
-    const tubesNeeded = await totalTubesNeeded(tubesAndVolumeNeeded)
-
-    return NextResponse.json({ success: true, calculation: tubesAndVolumeNeeded, text: tubesNeeded })
+    return NextResponse.json({ success: true, calculation: tubesAndVolumeNeeded })
   } catch (error) {
     console.error('Error processing with OpenAI Vision:', error)
     return NextResponse.json({ success: false, message: 'Processing failed' })
@@ -397,21 +361,59 @@ async function pdfToText(image: Buffer) {
 }
 async function textToTubeTypeAndVolume(extractedText: string) {
   const prompt = `
-    Given the following text that includes tests ordered and their corresponding CPT codes:
+    Given the following text that includes tests ordered and their corresponding order codes:
 
-    1. Identify all test names and CPT codes from the text.
+    1. Identify all test names and order codes from the text.
     2. For each test, match it with its corresponding tube type and volume using the provided reference list.
     3. Calculate the total volume required for each tube type.
-    4. Determine the number of tubes required for each tube type by considering the total available volume of each tube from the provided totalTubeVolume list. If the total volume for a tube type exceeds its capacity, add another tube.
+    4. By looking at ${totalTubeVolume} to see the max volume for the tubes, determine the number of tubes required for each tube type by considering the total available volume of each tube from the provided totalTubeVolume list. If the total volume for a tube type exceeds its capacity, add another tube.
+    5. For tubeSummary always take information for number of tubes from detailedSteps Step 4 and total volume from step 3. 
 
-    Output the result in this format:
+    Output the result as a JSON object structured with the following keys, your only output should be a pure JavaScript json object and nothing else, it should start with { end with }, do not use delimeters json :
 
-    Total Tubes Required by Type:
-    - [tubeType]: [number of tubes] tubes (Total Volume: [total volume in mL])
-
-    Example:
-    - gel-barrier: 2 tubes (Total Volume: 9 mL)
-    - lavender-top: 1 tube (Total Volume: 4 mL)
+    {
+      "success": true,
+      
+      "detailedSteps": [
+        {
+          "title": "Step 1: Identify all test names and order codes",
+          "content": [
+            "Test Name 1 - Order Code 1",
+            "Test Name 2 - Order Code 2",
+            ...
+          ]
+        },
+        {
+          "title": "Step 2: Match each test with its corresponding tube type and volume",
+          "content": [
+            "Test Name 1 - Tube Type: [tubeType], Volume: [volume]",
+            ...
+          ]
+        },
+        {
+          "title": "Step 3: Calculate the total volume required for each tube type",
+          "content": [
+            "Tube Type: [tubeType], Total Volume: [total volume in mL]",
+            ...
+          ]
+        },
+        {
+          "title": "Step 4: Determine the number of tubes required for each tube type",
+          "content": [
+            "Tube Type: [tubeType], Number of Tubes: [number of tubes]",
+            ...
+          ]
+        }
+      ],
+      "tubeSummary": [
+        {
+          "tubeType": "[tubeType]",
+          "numTubes": [number of tubes],
+          "totalVolume": "[total volume in mL]"
+        },
+        ...
+      ],
+    }
 
     Here is the reference list for the tests:
     ${JSON.stringify(testsReference)}
@@ -434,7 +436,9 @@ async function textToTubeTypeAndVolume(extractedText: string) {
         }
       ]
     })
-    return response.choices[0].message.content
+    if (response.choices[0].message.content) {
+      return JSON.parse(response.choices[0].message.content)
+    }
   } catch (error) {
     console.error('Error processing with OpenAI Vision:', error)
     throw error
@@ -488,7 +492,7 @@ async function convertPdfToImages(pdfBuffer: Buffer) {
   // Save each image to the directory and return the file paths
   const imagePaths = images.map((image, index) => {
     const imagePath = path.join(outputDir, `image_${index + 1}.jpeg`)
-    fs.writeFileSync(imagePath, image.buffer)
+    image.buffer && fs.writeFileSync(imagePath, image.buffer)
     return imagePath
   })
 
