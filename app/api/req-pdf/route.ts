@@ -360,7 +360,7 @@ async function pdfToText(image: Buffer) {
           content: [
             {
               type: 'text',
-              text: 'Your job is to find Profiles / Tests in this document and only extract that information(Order code, status, Test Name and Transport Requirements), but double check if all the tests are extracted accurately,'
+              text: 'Your job is to find Profiles / Tests in this document and only extract that information (Order code, status, Test Name, and Transport Requirements). Double-check if all the tests are extracted accurately.'
             },
             {
               type: 'image_url',
@@ -378,6 +378,7 @@ async function pdfToText(image: Buffer) {
     throw error
   }
 }
+
 async function textToTubeTypeAndVolume(extractedText: string) {
   const prompt = `
     Given the following text that includes tests ordered and their corresponding order codes:
@@ -512,9 +513,7 @@ async function convertPdfToImages(pdfBuffer: Buffer) {
 
   const converter = fromBuffer(pdfBuffer, options)
 
-  // Convert all pages to images as buffers
+  // Convert all pages to images as buffers and return them directly
   const images = await converter.bulk(-1, { responseType: 'buffer' })
-
-  // Return the image buffers directly
   return images.map((image) => image.buffer)
 }
