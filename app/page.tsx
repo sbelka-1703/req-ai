@@ -25,18 +25,21 @@ export default function FileUploadForm() {
   const [file, setFile] = useState<File | null>(null)
   const [calculation, setCalculation] = useState<CalculationResult | null>(null)
   const [response, setResponse] = useState('')
+  const [fileSelected, setFileSelected] = useState(false)
   const [processing, setProcessing] = useState(false)
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
+      setFileSelected(true)
       setFile(event.target.files[0])
     }
   }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-
+    setFileSelected(true)
     if (!file) {
+      setFileSelected(false)
       alert('Please select a file')
       return
     }
@@ -80,8 +83,13 @@ export default function FileUploadForm() {
               <div className='mt-4 flex text-sm leading-6 text-gray-600'>
                 <label
                   htmlFor='file-upload'
-                  className='relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500'>
-                  <span>Upload a requisition form </span>
+                  className={`relative cursor-pointer rounded-md bg-white font-semibold  focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500 ${
+                    fileSelected ? 'text-green-600' : 'text-indigo-600'
+                  }`}>
+                  <span>
+                    {' '}
+                    {!fileSelected ? 'Click here to select and upload a requisition form' : 'File selected!'}
+                  </span>
                   <input
                     onChange={handleFileChange}
                     accept='application/pdf'
@@ -91,7 +99,6 @@ export default function FileUploadForm() {
                     className='sr-only'
                   />
                 </label>
-                <p className='pl-1'>or drag and drop</p>
               </div>
               <p className='text-xs leading-5 text-gray-600'>PDF</p>
             </div>
@@ -99,7 +106,12 @@ export default function FileUploadForm() {
         </div>
         <button
           type='submit'
-          className='flex space-x-2 justify-center items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600'>
+          disabled={!fileSelected}
+          className={`flex space-x-2 justify-center items-center rounded-md  px-3 py-2 text-sm font-semibold text-white shadow-sm  focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2  ${
+            fileSelected
+              ? 'bg-indigo-600 hover:bg-indigo-500'
+              : ' text-gray-200 bg-slate-500 focus-visible:bg-slate-500'
+          } `}>
           <span>{!processing ? 'Upload PDF requisition' : 'Processing'}</span>
           {processing && <ArrowPathIcon className='w-6 animate-spin' />}
         </button>
