@@ -337,7 +337,7 @@ export async function POST(request: NextRequest) {
       images = await convertPdfToImages(pdfBuffer)
     } catch (imageConversionError) {
       console.error('Error converting PDF to images:', imageConversionError)
-      return NextResponse.json({ success: false, message: 'Failed to convert PDF to images' })
+      return NextResponse.json({ success: false, message: 'Failed to convert PDF to images:', imageConversionError })
     }
 
     // Step 4: Process each image with OpenAI Vision API
