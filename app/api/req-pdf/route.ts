@@ -314,6 +314,7 @@ Patient Signature: [Signature]
 
 export async function POST(request: NextRequest) {
   try {
+    // Step 1: Retrieve and validate the uploaded file
     const data = await request.formData()
     const file = data.get('file') as Blob
 
@@ -321,32 +322,61 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'No file uploaded' })
     }
 
-    // Convert the file into a Buffer for pdf2pic
-    const pdfBuffer = Buffer.from(await file.arrayBuffer())
-
-    // Convert the PDF to images using pdf2pic
-    const images = await convertPdfToImages(pdfBuffer)
-
-    const results = []
-
-    // Send each image to OpenAI Vision API with retry mechanism
-    for (const image of images) {
-      if (image) {
-        const visionResult = await pdfToText(image)
-        results.push(visionResult)
-      }
+    // Step 2: Convert the file into a Buffer for processing
+    let pdfBuffer
+    try {
+      pdfBuffer = Buffer.from(await file.arrayBuffer())
+    } catch (bufferError) {
+      console.error('Error converting file to buffer:', bufferError)
+      return NextResponse.json({ success: false, message: 'Failed to process the uploaded file' })
     }
 
+    // Step 3: Convert the PDF to images
+    let images
+    try {
+      images = await convertPdfToImages(pdfBuffer)
+    } catch (imageConversionError) {
+      console.error('Error converting PDF to images:', imageConversionError)
+      return NextResponse.json({ success: false, message: 'Failed to convert PDF to images' })
+    }
+
+    // Step 4: Process each image with OpenAI Vision API
+    const results = []
+    try {
+      for (const image of images) {
+        if (image) {
+          try {
+            const visionResult = await pdfToText(image)
+            results.push(visionResult)
+          } catch (visionError) {
+            console.error('Error processing image with OpenAI Vision:', visionError)
+            return NextResponse.json({ success: false, message: 'Failed to process image with OpenAI Vision' })
+          }
+        }
+      }
+    } catch (imageProcessingError) {
+      console.error('Error during image processing loop:', imageProcessingError)
+      return NextResponse.json({ success: false, message: 'Image processing failed' })
+    }
+
+    // Step 5: Join the results and process the text to determine tube types and volumes
     const joinedResults = results.join('\n')
     console.log('text from pdf', joinedResults)
 
-    const tubesAndVolumeNeeded = await textToTubeTypeAndVolume(joinedResults)
+    let tubesAndVolumeNeeded
+    try {
+      tubesAndVolumeNeeded = await textToTubeTypeAndVolume(joinedResults)
+    } catch (textProcessingError) {
+      console.error('Error processing text to determine tubes and volumes:', textProcessingError)
+      return NextResponse.json({ success: false, message: 'Failed to process text for tubes and volumes' })
+    }
+
     console.log('tubesAndVolumeNeeded', tubesAndVolumeNeeded)
 
     return NextResponse.json({ success: true, calculation: tubesAndVolumeNeeded })
   } catch (error) {
-    console.error('Error processing with OpenAI Vision:', error)
-    return NextResponse.json({ success: false, message: 'Processing failed' })
+    console.error('Unexpected error:', error)
+    return NextResponse.json({ success: false, message: 'Processing failed due to an unexpected error' })
   }
 }
 
