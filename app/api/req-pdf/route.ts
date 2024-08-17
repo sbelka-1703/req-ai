@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fromBuffer } from 'pdf2pic'
 import { Buffer } from 'buffer'
+import { convertPdfToImages } from '@/utils/convertPdfToImages'
 
 import OpenAI from 'openai'
 const openAi = new OpenAI({
@@ -312,6 +313,8 @@ Patient Signature: [Signature]
 // ---
 // `
 
+// Your existing constants and functions (e.g., textToTubeTypeAndVolume, totalTubesNeeded, etc.)
+
 export async function POST(request: NextRequest) {
   try {
     // Step 1: Retrieve and validate the uploaded file
@@ -533,27 +536,25 @@ async function totalTubesNeeded(extractedText: string | null) {
 
 // Function to convert PDF to images (using pdf2pic)
 
-async function convertPdfToImages(pdfBuffer: Buffer) {
-  const options = {
-    density: 200, // Reduce density for lower processing overhead
-    format: 'jpeg',
-    width: 800, // Reduce dimensions to reduce memory usage
-    height: 800,
-    quality: 80 // Lower quality to reduce memory usage
-  }
+// async function convertPdfToImages(pdfBuffer: Buffer) {
+//   const options = {
+//     density: 200, // Reduce density for lower processing overhead
+//     format: 'jpeg',
+//     width: 800, // Reduce dimensions to reduce memory usage
+//     height: 800,
+//     quality: 80 // Lower quality to reduce memory usage
+//   }
 
-  const converter = fromBuffer(pdfBuffer, options)
+//   const converter = fromBuffer(pdfBuffer, options)
 
-  // Convert pages one at a time to reduce memory usage
-  const pagesToConvert = -1 // Set to -1 to convert all pages, or specify a range like [1, 2, 3] for specific pages
+//   // Convert pages one at a time to reduce memory usage
+//   const pagesToConvert = -1 // Set to -1 to convert all pages, or specify a range like [1, 2, 3] for specific pages
 
-  try {
-    const images = await converter.bulk(pagesToConvert, { responseType: 'buffer' })
-    return images.map((image) => image.buffer)
-  } catch (error) {
-    console.error('Error converting PDF to images:', error)
-    throw new Error('PDF to image conversion failed.')
-  }
-}
-
-export default convertPdfToImages
+//   try {
+//     const images = await converter.bulk(pagesToConvert, { responseType: 'buffer' })
+//     return images.map((image) => image.buffer)
+//   } catch (error) {
+//     console.error('Error converting PDF to images:', error)
+//     throw new Error('PDF to image conversion failed.')
+//   }
+// }
